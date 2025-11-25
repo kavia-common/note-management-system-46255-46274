@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,14 +24,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-0ku_as45vs5isd^px=t#m8g#^*x7f=w#gw-xb^t@^-pom)r^t6'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Read from env for preview/prod, default True for dev.
+DEBUG = os.environ.get("DJANGO_DEBUG", "true").lower() in ("1", "true", "yes", "on")
 
-ALLOWED_HOSTS = [
-    '.kavia.ai',
-    'localhost',
-    '127.0.0.1',
-    'testserver',
-]
+# Allow dynamic hosts from env or default to permissive preview-safe list.
+_allowed_hosts = os.environ.get("DJANGO_ALLOWED_HOSTS")
+if _allowed_hosts:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts.split(",") if h.strip()]
+else:
+    # Default includes preview proxy domains and common locals
+    ALLOWED_HOSTS = [
+        "*",                 # permissive for preview to avoid host header issues
+        ".kavia.ai",
+        "localhost",
+        "127.0.0.1",
+        "testserver",
+    ]
 
 
 # Application definition
@@ -133,8 +142,20 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.environ.get("CORS_ALLOW_ALL", "true").lower() in ("1", "true", "yes", "on")
 CORS_ALLOW_CREDENTIALS = True
+
+# Trust proxy origins for CSRF when behind preview domains or when configured
+_csrf_trusted = os.environ.get("CSRF_TRUSTED_ORIGINS")
+if _csrf_trusted:
+    CSRF_TRUSTED_ORIGINS = [o.strip() for o in _csrf_trusted.split(",") if o.strip()]
+else:
+    # Include common preview/proxy schemes
+    CSRF_TRUSTED_ORIGINS = [
+        "https://*.kavia.ai",
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+    ]
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
