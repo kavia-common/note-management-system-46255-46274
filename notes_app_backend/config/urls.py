@@ -28,9 +28,9 @@ urlpatterns = [
 
 schema_view = get_schema_view(
    openapi.Info(
-      title="My API",
+      title="Notes API",
       default_version='v1',
-      description="Test description",
+      description="REST API for Notes app with token auth",
    ),
    public=True,
    permission_classes=(permissions.AllowAny,),
